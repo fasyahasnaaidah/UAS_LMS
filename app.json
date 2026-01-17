@@ -1,7 +1,12 @@
 {
   "expo": {
+<<<<<<< HEAD
     "name": "UAS_LMS",
     "slug": "UAS_LMS",
+=======
+    "name": "uaslms",
+    "slug": "uaslms",
+>>>>>>> 550b655 (initial commit)
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
