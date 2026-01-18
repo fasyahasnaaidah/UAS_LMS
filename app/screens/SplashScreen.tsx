@@ -1,30 +1,52 @@
-import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StatusBar, StyleSheet, View } from 'react-native';
 
 export default function SplashScreen({ navigation }: any) {
   useEffect(() => {
-    const t = setTimeout(() => navigation.replace('SignIn'), 1200);
-    return () => clearTimeout(t);
+    const checkLogin = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const role = await AsyncStorage.getItem('userRole');
+
+        // Add a small delay for branding effect, or remove if you want instant load
+        setTimeout(() => {
+          if (token) {
+             if (role === 'student') {
+                navigation.replace('StudentRoot');
+             } else if (role === 'teacher') {
+                navigation.replace('InstructorRoot');
+             } else {
+                 // Fallback
+                navigation.replace('SignIn');
+             }
+          } else {
+            navigation.replace('SignIn');
+          }
+        }, 2000);
+      } catch {
+        navigation.replace('SignIn');
+      }
+    };
+
+    checkLogin();
   }, [navigation]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.logoBox}>
-        <Ionicons name="school-outline" size={52} color="white" />
-      </View>
-      <Text style={styles.brand}>Coursedu</Text>
+      <StatusBar barStyle="light-content" />
+      <Image 
+        source={require('../../assets/images/logo.png')} 
+        style={styles.logo}
+        resizeMode="contain"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#003D79', alignItems: 'center', justifyContent: 'center' },
-  logoBox: {
-    width: 86, height: 86, borderRadius: 24,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    marginBottom: 12,
-  },
-  brand: { color: 'white', fontSize: 20, fontWeight: '800' },
+  container: { flex: 1, backgroundColor: '#003D79', justifyContent: 'center', alignItems: 'center' },
+  logoContainer: { width: 100, height: 100, marginBottom: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
+  logo: { width: 100, height: 100, marginBottom: 10 },
+  brand: { color: 'white', fontSize: 32, fontWeight: 'bold' }
 });

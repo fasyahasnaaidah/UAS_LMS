@@ -2,14 +2,14 @@ import { API_URL } from '@/config/api';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Modal } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-export default function SignInScreen({ navigation }: any) {
+export default function CreateAccountScreen({ navigation }: any) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // New state
   const [loading, setLoading] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -24,53 +24,42 @@ export default function SignInScreen({ navigation }: any) {
     setModalVisible(true);
   };
 
-  const handleModalClose = async () => {
+  const handleModalClose = () => {
     setModalVisible(false);
     if (modalType === 'success') {
-      try {
-        const role = await AsyncStorage.getItem('userRole');
-        if (role === 'student') {
-          navigation.replace('StudentRoot');
-        } else if (role === 'teacher') {
-          navigation.replace('InstructorRoot');
-        } else {
-          // Fallback or handle other roles
-           // For now, maybe default to Student or show error
-           console.warn('Unknown role:', role);
-           navigation.replace('StudentRoot'); // Fallback to student for safety
-        }
-      } catch (e) {
-        console.error("Error reading role", e);
-      }
+      navigation.navigate('SignIn');
     }
   };
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleRegister = async () => {
+    // Basic validation
+    if (!name || !email || !password || !confirmPassword) {
       showModal('Error', 'Please fill in all fields', 'error');
+      return;
+    }
+
+    // Password match validation
+    if (password !== confirmPassword) {
+      showModal('Error', 'Passwords do not match', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(`${API_URL}/api/auth/register`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password, role: 'student' }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        await AsyncStorage.setItem('userToken', data.token);
-        await AsyncStorage.setItem('userName', data.user.name);
-        await AsyncStorage.setItem('userRole', data.user.role); // Save Role
-        
-        showModal('Success', 'Login Successful!', 'success');
+        showModal('Success', 'Account Created Successfully!', 'success');
       } else {
-        showModal('Login Failed', data.message || 'Invalid credentials', 'error');
+        showModal('Registration Failed', data.message || 'Something went wrong', 'error');
       }
     } catch (error) {
       showModal('Connection Error', 'Could not connect to server. Ensure backend is running.', 'error');
@@ -82,11 +71,25 @@ export default function SignInScreen({ navigation }: any) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Sign In</Text>
+      {/* Tombol Back */}
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Ionicons name="chevron-back" size={24} color="black" />
+      </TouchableOpacity>
+      
+      <Text style={styles.title}>Create An Account</Text>
       <Text style={styles.subText}>
-        New User? <Text style={styles.link} onPress={() => navigation.navigate('CreateAccount')}>Create an account</Text>
+        Already have an account? <Text style={styles.link} onPress={() => navigation.navigate('SignIn')}>Login</Text>
       </Text>
       
+      {/* Form Input */}
+      <Text style={styles.label}>Full Name</Text>
+      <TextInput 
+        placeholder="Full your name" 
+        style={styles.input} 
+        value={name}
+        onChangeText={setName}
+      />
+
       <Text style={styles.label}>Email Address</Text>
       <TextInput 
         placeholder="example@gmail.com" 
@@ -101,26 +104,37 @@ export default function SignInScreen({ navigation }: any) {
       <View style={styles.passInput}>
         <TextInput 
           placeholder="Input your password" 
-          secureTextEntry={!isPasswordVisible} 
+          secureTextEntry 
           style={{flex: 1}} 
           value={password}
           onChangeText={setPassword}
         />
-        <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
-          <Ionicons name={isPasswordVisible ? "eye" : "eye-off"} size={20} color="gray" />
-        </TouchableOpacity>
+        <Ionicons name="eye-off" size={20} color="gray" />
       </View>
-      <Text style={styles.forgot}>Forgot password?</Text>
 
+      {/* Confirm Password Input */}
+      <Text style={[styles.label, { marginTop: 20 }]}>Confirm Password</Text>
+      <View style={styles.passInput}>
+        <TextInput 
+          placeholder="Confirm your password" 
+          secureTextEntry 
+          style={{flex: 1}} 
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+        <Ionicons name="eye-off" size={20} color="gray" />
+      </View>
+
+      {/* Tombol Create */}
       <TouchableOpacity 
         style={[styles.btn, loading && { opacity: 0.7 }]} 
-        onPress={handleLogin}
+        onPress={handleRegister}
         disabled={loading}
       >
         {loading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={styles.btnText}>Sign In</Text>
+          <Text style={styles.btnText}>Create</Text>
         )}
       </TouchableOpacity>
 
@@ -157,17 +171,17 @@ export default function SignInScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 25, paddingTop: 100, backgroundColor: 'white' },
+  container: { flexGrow: 1, padding: 25, backgroundColor: 'white' },
+  backBtn: { marginTop: 40, marginBottom: 20 },
   title: { fontSize: 28, fontWeight: 'bold' },
   subText: { color: 'gray', marginBottom: 30 },
   link: { color: '#003D79', fontWeight: 'bold' },
   label: { fontWeight: '600', marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#DDD', padding: 15, borderRadius: 12, marginBottom: 20 },
   passInput: { flexDirection: 'row', borderWidth: 1, borderColor: '#DDD', padding: 15, borderRadius: 12, alignItems: 'center' },
-  forgot: { textAlign: 'right', color: 'gray', marginTop: 10 },
   btn: { backgroundColor: '#003D79', padding: 18, borderRadius: 12, marginTop: 30 },
   btnText: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 },
-
+  
   // Modal Styles
   modalOverlay: { 
     flex: 1, 
